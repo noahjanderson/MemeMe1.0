@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ViewController: UIViewController,  UIImagePickerControllerDelegate, UINavigationControllerDelegate, UITextFieldDelegate{
+class MemeEditorViewController: UIViewController,  UIImagePickerControllerDelegate, UINavigationControllerDelegate, UITextFieldDelegate{
 
     @IBOutlet var shareButton: UIBarButtonItem!
     @IBOutlet var albumButton: UIBarButtonItem!
@@ -21,10 +21,11 @@ class ViewController: UIViewController,  UIImagePickerControllerDelegate, UINavi
     @IBOutlet var bottomToolBar: UIToolbar!
     
     let imagePicker = UIImagePickerController()
-    var memedImage:UIImage?
     var keyboardHeightY:CGFloat?
+    var ourMeme:Meme?
     override func viewDidLoad() {
         super.viewDidLoad()
+        ourMeme = Meme()
         if !UIImagePickerController.isSourceTypeAvailable(UIImagePickerControllerSourceType.Camera){
             cameraButton.enabled = false
         }
@@ -35,15 +36,10 @@ class ViewController: UIViewController,  UIImagePickerControllerDelegate, UINavi
             NSStrokeColorAttributeName : UIColor.blackColor(),
             NSForegroundColorAttributeName : UIColor.whiteColor(),
             NSFontAttributeName : UIFont(name: "HelveticaNeue-CondensedBlack", size: 40)!,
-            NSStrokeWidthAttributeName : 3.0
+            NSStrokeWidthAttributeName : -3.0
         ]
-        
-        topTextField.defaultTextAttributes = memeTextAttributes
-        bottomTextField.defaultTextAttributes = memeTextAttributes
-        topTextField.textAlignment = NSTextAlignment.Center
-        bottomTextField.textAlignment = NSTextAlignment.Center
-        topTextField.textColor = UIColor.whiteColor()
-        bottomTextField.textColor = UIColor.whiteColor()
+        setTextFieldProperties(topTextField, attributes: memeTextAttributes, alignment: NSTextAlignment.Center)
+        setTextFieldProperties(bottomTextField, attributes: memeTextAttributes, alignment: NSTextAlignment.Center)
         shareButton.enabled = false
     }
     
@@ -57,16 +53,13 @@ class ViewController: UIViewController,  UIImagePickerControllerDelegate, UINavi
         unSubscribeFromKeyboardNotifications()
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
+    override func prefersStatusBarHidden() -> Bool {
+        return true     // status bar should be hidden
     }
     
     func textFieldDidBeginEditing(textField: UITextField) {
-        if textField == topTextField && topTextField.text == "TOP" {
-            topTextField.text = ""
-        }
-        if textField == bottomTextField && bottomTextField.text == "BOTTOM" {
-            bottomTextField.text = ""
+        if textField.text == "TOP" || textField.text == "BOTTOM" {
+            textField.text = ""
         }
     }
     
@@ -82,11 +75,15 @@ class ViewController: UIViewController,  UIImagePickerControllerDelegate, UINavi
     }
     
     func keyboardWillShow(notification : NSNotification){
-        self.view.frame.origin.y -= getKeyBoardHeight(notification)
+        if bottomTextField.isFirstResponder() {
+            self.view.frame.origin.y = getKeyBoardHeight(notification) * -1
+        }
     }
     
     func keyboardWillHide(notification : NSNotification){
-        self.view.frame.origin.y += getKeyBoardHeight(notification)
+        if bottomTextField.isFirstResponder() {
+            self.view.frame.origin.y = 0
+        }
     }
     
     func subscribeToKeyboardNotifications() {
@@ -101,7 +98,7 @@ class ViewController: UIViewController,  UIImagePickerControllerDelegate, UINavi
 
     func imagePickerController(picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [String : AnyObject]) {
         if let pickedImage = info[UIImagePickerControllerOriginalImage] as? UIImage {
-            memeImageView.contentMode = .ScaleAspectFill
+            memeImageView.contentMode = .ScaleAspectFit
             memeImageView.image = pickedImage
             shareButton.enabled = true
         }
@@ -121,12 +118,17 @@ class ViewController: UIViewController,  UIImagePickerControllerDelegate, UINavi
     
     @IBAction func shareMeme(sender: UIBarButtonItem) {
         //let textToShare = "Meme Me 1.0 | Noah J Anderson"
-        memedImage = generateMemedImage()
-        let imageToShare : UIImage = memedImage!
+        ourMeme = Meme(tf1: topTextField.text, tf2: bottomTextField.text, img: memeImageView.image, imgMemed: generateMemedImage())
         var objectsToShare = [AnyObject]()
-        objectsToShare.append(imageToShare)
+        objectsToShare.append((ourMeme?.imgMemed)!)
         let shareController = UIActivityViewController(activityItems: objectsToShare,applicationActivities: nil)
         self.presentViewController(shareController, animated: true, completion: nil)
+        shareController.completionWithItemsHandler = {(activityType, completed:Bool, returnedItems:[AnyObject]?, error: NSError?) in
+            if (!completed) {
+                return
+            }
+            self.saveMeme()
+        }
     }
 
     @IBAction func cancelMeme(sender: UIBarButtonItem) {
@@ -136,7 +138,6 @@ class ViewController: UIViewController,  UIImagePickerControllerDelegate, UINavi
         topTextField.text = "TOP"
         bottomTextField.text = "BOTTOM"
         shareButton.enabled = false
-        memedImage = nil
     }
     
     func generateMemedImage() -> UIImage {
@@ -152,4 +153,35 @@ class ViewController: UIViewController,  UIImagePickerControllerDelegate, UINavi
         bottomToolBar.hidden = false
         return memedImage
     }
+    
+    func setTextFieldProperties (textfield: UITextField, attributes: [String: AnyObject], alignment: NSTextAlignment){
+        textfield.defaultTextAttributes = attributes
+        textfield.textAlignment = alignment
+    }
+    
+    func saveMeme(){
+//        let todaysDate = NSDate()
+//        let dateFormatter = NSDateFormatter()
+//        dateFormatter.dateFormat = "yyyyMMdd_HH:mm:ss"
+//        let dateString = dateFormatter.stringFromDate(todaysDate)
+//        let imagePath = fileInDocumentsDirectory("Meme_\(dateString)")
+//        print("saving to...")
+//        print(imagePath)
+//        let pngImageData = UIImagePNGRepresentation((ourMeme?.imgMemed)!)
+//        let result = pngImageData!.writeToFile(imagePath, atomically: true)
+        UIImageWriteToSavedPhotosAlbum((ourMeme?.imgMemed)!, nil, nil, nil)
+    }
+    
+    func getDocumentsURL() -> NSURL {
+        let documentsURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask)[0]
+        return documentsURL
+    }
+    
+    func fileInDocumentsDirectory(filename: String) -> String {
+        
+        let fileURL = getDocumentsURL().URLByAppendingPathComponent(filename)
+        return fileURL.path!
+        
+    }
+    
 }
