@@ -8,7 +8,7 @@
 
 import UIKit
 
-class Meme {
+struct Meme {
     var tf1:String?
     var tf2:String?
     var img:UIImage?
@@ -24,9 +24,6 @@ class Meme {
         self.tf1 = tf1
         self.tf2 = tf2
         self.img = img
-        self.imgMemed = imgMemed
-    }
-    func setMemedImg (imgMemed: UIImage){
         self.imgMemed = imgMemed
     }
 }
