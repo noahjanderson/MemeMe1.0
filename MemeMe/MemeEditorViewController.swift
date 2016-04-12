@@ -160,28 +160,6 @@ class MemeEditorViewController: UIViewController,  UIImagePickerControllerDelega
     }
     
     func saveMeme(){
-//        let todaysDate = NSDate()
-//        let dateFormatter = NSDateFormatter()
-//        dateFormatter.dateFormat = "yyyyMMdd_HH:mm:ss"
-//        let dateString = dateFormatter.stringFromDate(todaysDate)
-//        let imagePath = fileInDocumentsDirectory("Meme_\(dateString)")
-//        print("saving to...")
-//        print(imagePath)
-//        let pngImageData = UIImagePNGRepresentation((ourMeme?.imgMemed)!)
-//        let result = pngImageData!.writeToFile(imagePath, atomically: true)
         UIImageWriteToSavedPhotosAlbum((ourMeme?.imgMemed)!, nil, nil, nil)
     }
-    
-    func getDocumentsURL() -> NSURL {
-        let documentsURL = NSFileManager.defaultManager().URLsForDirectory(.DocumentDirectory, inDomains: .UserDomainMask)[0]
-        return documentsURL
-    }
-    
-    func fileInDocumentsDirectory(filename: String) -> String {
-        
-        let fileURL = getDocumentsURL().URLByAppendingPathComponent(filename)
-        return fileURL.path!
-        
-    }
-    
 }
